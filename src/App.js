@@ -830,7 +830,7 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment,o
 
   useEffect(()=>{
     (async()=>{
-      const {data=[]}=await api.getAssessments(patient.id);
+      const {data=[]}=await api.getAssessments(patient.id, doctor.id);
       setAssessments((data||[]).sort((a,b)=>new Date(b.date)-new Date(a.date)));
       setLoading(false);
     })();
@@ -1545,7 +1545,7 @@ export default function App(){
   if(screen==="dashboard") return <Dashboard doctor={doctor} onLogout={()=>{setDoctor(null);go("landing");}} onNewPatient={()=>go("newPatient")} onSelectPatient={p=>{setPatient(p);go("patientDetail");}} onAdmin={()=>go("adminLogin")}/>;
   if(screen==="newPatient") return <NewPatient doctor={doctor} onBack={()=>go("dashboard")} onSuccess={p=>{setPatient(p);go("assessment");}}/>;
   if(screen==="patientDetail") return <PatientDetail patient={patient} doctor={doctor} onBack={()=>go("dashboard")} onNewAssessment={()=>go("assessment")} onViewAssessment={(a,prev)=>{setAssessment(a);setPrevAssessment(prev);go("results");}} onDeleted={()=>go("dashboard")}/>;
-  if(screen==="assessment") return <AssessmentForm patient={patient} doctor={doctor} onBack={()=>go("patientDetail")} onSave={async(rec)=>{const as=await api.getAssessments(patient.id);const sorted=(as.data||[]).filter(a=>a.id!==rec.id).sort((a,b)=>new Date(b.date)-new Date(a.date));setAssessment(rec);setPrevAssessment(sorted[0]||null);go("results");}}/>;
+  if(screen==="assessment") return <AssessmentForm patient={patient} doctor={doctor} onBack={()=>go("patientDetail")} onSave={async(rec)=>{const as=await api.getAssessments(patient.id,doctor.id);const sorted=(as.data||[]).filter(a=>a.id!==rec.id).sort((a,b)=>new Date(b.date)-new Date(a.date));setAssessment(rec);setPrevAssessment(sorted[0]||null);go("results");}}/>;
   if(screen==="results") return <Results assessment={assessment} prevAssessment={prevAssessment} patient={patient} doctor={doctor} onBack={()=>go("patientDetail")}/>;
   return null;
 }
