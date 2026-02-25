@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 // ============================================================
 // ⚙️ CONFIG — ใส่ URL จาก Google Apps Script Deploy ที่นี่
 // ============================================================
-const GAS_URL = "https://script.google.com/macros/s/AKfycb.../exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbx_ubttOiFzGAmKzbeoE4c_2BOOQGqEeulRJ7zHbPBKZa7uT1jC2VG1TqLoQmAD7ucREA/exec";
 // ตัวอย่าง: "https://script.google.com/macros/s/AKfycb.../exec"
 
 // ============================================================
