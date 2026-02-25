@@ -822,7 +822,7 @@ const NewPatient = ({doctor,onBack,onSuccess})=>{
 // ============================================================
 // SCREEN: Patient Detail
 // ============================================================
-const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment,onDeleted})=>{
+const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onRedoAssessment,onViewAssessment,onDeleted})=>{
   const [assessments,setAssessments]=useState([]);
   const [loading,setLoading]=useState(true);
   const [confirmDel,setConfirmDel]=useState(false);
@@ -886,26 +886,38 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment,o
       <div style={{maxWidth:800,margin:"0 auto",padding:24}}>
         {loading ? <Loader/> : (
           <>
-            {assessments.length>=2&&(
+            {assessments.length>=1&&(
               <Card style={{marginBottom:20}}>
                 <h3 style={{margin:"0 0 16px",color:C.text,fontSize:16}}>📈 แนวโน้มคะแนน</h3>
                 <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,alignItems:"flex-end"}}>
                   {[...assessments].reverse().map((a,i)=>{
                     const interp=getInterp(a.totalScore); const pct=(a.totalScore/MAX_TOTAL)*100;
-                    return(<div key={a.id} style={{textAlign:"center",minWidth:72}}>
+                    const isLatest=i===assessments.length-1;
+                    return(<div key={a.id} style={{textAlign:"center",minWidth:72,cursor:"pointer"}}
+                      onClick={()=>onViewAssessment(a,i>0?[...assessments].reverse()[i-1]:null)}>
                       <div style={{height:80,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-                        <div style={{width:40,background:interp.color,borderRadius:"6px 6px 0 0",height:`${Math.max(pct,5)}%`}}/>
+                        <div style={{width:40,background:interp.color,borderRadius:"6px 6px 0 0",
+                          height:`${Math.max(pct,5)}%`,
+                          outline:isLatest?`2px solid ${interp.color}`:undefined,
+                          outlineOffset:2,opacity:isLatest?1:0.65}}/>
                       </div>
                       <div style={{fontSize:13,fontWeight:700,color:interp.color,marginTop:4}}>{a.totalScore}</div>
+                      <div style={{fontSize:10,color:C.textLight}}>ครั้ง {i+1}</div>
                       <div style={{fontSize:10,color:C.textLight}}>{fmtDate(a.date).slice(0,8)}</div>
                     </div>);
                   })}
                 </div>
+                {assessments.length===1&&<div style={{fontSize:12,color:C.textLight,marginTop:8}}>📌 ประเมินครั้งถัดไปเพื่อดูแนวโน้มเปรียบเทียบ</div>}
               </Card>
             )}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
               <h3 style={{margin:0,color:C.text}}>ประวัติการประเมิน</h3>
-              <Btn sm onClick={onNewAssessment}>+ ประเมินใหม่</Btn>
+              {assessments.length>0?(
+                <div style={{display:"flex",gap:8}}>
+                  <Btn sm variant="outline" onClick={()=>onRedoAssessment(assessments[0])}>🔄 ประเมินใหม่</Btn>
+                  <Btn sm onClick={onNewAssessment}>➕ ประเมินครั้งถัดไป</Btn>
+                </div>
+              ):(null)}
             </div>
             {assessments.length===0?(
               <Card style={{textAlign:"center",padding:40}}>
@@ -950,9 +962,10 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment,o
 // ============================================================
 // SCREEN: Assessment Form (5 หน้า)
 // ============================================================
-const AssessmentForm = ({patient,doctor,onBack,onSave})=>{
-  const [answers,setAnswers]=useState({});
-  const [notes,setNotes]=useState("");
+const AssessmentForm = ({patient,doctor,onBack,onSave,editAssessment=null})=>{
+  const isRedo=!!editAssessment;
+  const [answers,setAnswers]=useState(isRedo?(editAssessment.answers||{}):{});
+  const [notes,setNotes]=useState(isRedo?(editAssessment.notes||""):"");
   const [step,setStep]=useState(0);
   const [saving,setSaving]=useState(false);
   const pages=[
@@ -967,7 +980,13 @@ const AssessmentForm = ({patient,doctor,onBack,onSave})=>{
   const save=async()=>{
     setSaving(true);
     try {
-      const rec={id:uid(),patientId:patient.id,doctorId:doctor.id,date:new Date().toISOString(),answers,totalScore:calcScore(),notes};
+      const rec={
+        id:isRedo?editAssessment.id:uid(),
+        patientId:patient.id,doctorId:doctor.id,
+        date:new Date().toISOString(),
+        answers,totalScore:calcScore(),notes,
+        ...(isRedo?{redoOf:editAssessment.id}:{})
+      };
       await api.saveAssessment(rec); onSave(rec);
     } catch { alert("บันทึกไม่สำเร็จ กรุณาลองใหม่"); }
     setSaving(false);
@@ -1060,7 +1079,7 @@ const AssessmentForm = ({patient,doctor,onBack,onSave})=>{
         <div style={{maxWidth:800,margin:"0 auto"}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
             <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:13}}>← กลับ</button>
-            <div style={{flex:1}}><div style={{fontSize:12,opacity:0.8}}>ประเมิน: {patient.firstName} {patient.lastName}</div><div style={{fontWeight:700}}>{pg.title}</div></div>
+            <div style={{flex:1}}><div style={{fontSize:12,opacity:0.8}}>{isRedo?"🔄 ประเมินใหม่":"➕ ประเมินใหม่"}: {patient.firstName} {patient.lastName}</div><div style={{fontWeight:700}}>{pg.title}</div></div>
             <div style={{fontWeight:700}}>{step+1}/{pages.length}</div>
           </div>
           <div style={{height:6,borderRadius:99,background:"rgba(255,255,255,0.25)"}}>
@@ -1096,7 +1115,7 @@ const AssessmentForm = ({patient,doctor,onBack,onSave})=>{
 // ============================================================
 // SCREEN: Results
 // ============================================================
-const Results = ({assessment,prevAssessment,patient,doctor,onBack})=>{
+const Results = ({assessment,prevAssessment,patient,doctor,onBack,onNewAssessment})=>{
   const interp=getInterp(assessment.totalScore);
   const pct=Math.round((assessment.totalScore/MAX_TOTAL)*100);
   const diff=prevAssessment?assessment.totalScore-prevAssessment.totalScore:null;
@@ -1116,8 +1135,12 @@ const Results = ({assessment,prevAssessment,patient,doctor,onBack})=>{
           <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:13}}>← กลับ</button>
           <div style={{flex:1,fontWeight:700}}>ผลการประเมิน ADCS-MCI-ADL</div>
           <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.7)",background:"rgba(255,255,255,0.15)"}}
+            onClick={onNewAssessment}>
+            ➕ ประเมินครั้งถัดไป
+          </Btn>
+          <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.7)",background:"rgba(255,255,255,0.15)"}}
             onClick={()=>exportPDF(assessment,patient,doctor,prevAssessment)}>
-            📄 Export PDF
+            📄 PDF
           </Btn>
         </div>
       </div>
@@ -1130,7 +1153,7 @@ const Results = ({assessment,prevAssessment,patient,doctor,onBack})=>{
               <h2 style={{margin:0,color:C.text}}>{patient.firstName} {patient.lastName}</h2>
               <div style={{color:C.textMid}}>{patient.gender} · อายุ {patient.age} ปี</div>
               <div style={{color:C.textLight,fontSize:13}}>วันที่ประเมิน: {fmtDate(assessment.date)}</div>
-              <div style={{color:C.textLight,fontSize:13}}>แพทย์: นพ./พญ. {doctor?.firstName} {doctor?.lastName} (เลข ว. {doctor?.license})</div>
+              <div style={{color:C.textLight,fontSize:13}}>แพทย์: {doctor?.title||"นพ./พญ."} {doctor?.firstName} {doctor?.lastName} (เลข ว. {doctor?.license})</div>
             </div>
             <div style={{textAlign:"center"}}>
               <div style={{position:"relative",width:100,height:100,margin:"0 auto"}}>
@@ -1526,6 +1549,7 @@ export default function App(){
   const [patient,setPatient]=useState(null);
   const [assessment,setAssessment]=useState(null);
   const [prevAssessment,setPrevAssessment]=useState(null);
+  const [editAssessment,setEditAssessment]=useState(null);
   useEffect(()=>{
     const link=document.createElement("link");
     link.rel="stylesheet";
@@ -1536,6 +1560,16 @@ export default function App(){
     document.body.style.background=C.bg;
   },[]);
   const go=sc=>setScreen(sc);
+
+  const handleSaveAssessment=async(rec)=>{
+    const as=await api.getAssessments(patient.id,doctor.id);
+    const sorted=(as.data||[]).filter(a=>a.id!==rec.id).sort((a,b)=>new Date(b.date)-new Date(a.date));
+    setAssessment(rec);
+    setPrevAssessment(sorted[0]||null);
+    setEditAssessment(null);
+    go("results");
+  };
+
   if(screen==="landing") return <Landing onLogin={()=>go("login")} onRegister={()=>go("register")} onAdmin={()=>go("adminLogin")}/>;
   if(screen==="register") return <Register onBack={()=>go("landing")} onSuccess={()=>go("login")}/>;
   if(screen==="login") return <Login onBack={()=>go("landing")} onSuccess={d=>{setDoctor(d);go("dashboard");}} onForgot={()=>go("forgot")}/>;
@@ -1543,9 +1577,21 @@ export default function App(){
   if(screen==="adminLogin") return <AdminLogin onBack={()=>go("landing")} onSuccess={()=>go("admin")}/>;
   if(screen==="admin") return <AdminDash onBack={()=>go("landing")}/>;
   if(screen==="dashboard") return <Dashboard doctor={doctor} onLogout={()=>{setDoctor(null);go("landing");}} onNewPatient={()=>go("newPatient")} onSelectPatient={p=>{setPatient(p);go("patientDetail");}} onAdmin={()=>go("adminLogin")}/>;
-  if(screen==="newPatient") return <NewPatient doctor={doctor} onBack={()=>go("dashboard")} onSuccess={p=>{setPatient(p);go("assessment");}}/>;
-  if(screen==="patientDetail") return <PatientDetail patient={patient} doctor={doctor} onBack={()=>go("dashboard")} onNewAssessment={()=>go("assessment")} onViewAssessment={(a,prev)=>{setAssessment(a);setPrevAssessment(prev);go("results");}} onDeleted={()=>go("dashboard")}/>;
-  if(screen==="assessment") return <AssessmentForm patient={patient} doctor={doctor} onBack={()=>go("patientDetail")} onSave={async(rec)=>{const as=await api.getAssessments(patient.id,doctor.id);const sorted=(as.data||[]).filter(a=>a.id!==rec.id).sort((a,b)=>new Date(b.date)-new Date(a.date));setAssessment(rec);setPrevAssessment(sorted[0]||null);go("results");}}/>;
-  if(screen==="results") return <Results assessment={assessment} prevAssessment={prevAssessment} patient={patient} doctor={doctor} onBack={()=>go("patientDetail")}/>;
+  if(screen==="newPatient") return <NewPatient doctor={doctor} onBack={()=>go("dashboard")} onSuccess={p=>{setPatient(p);setEditAssessment(null);go("assessment");}}/>;
+  if(screen==="patientDetail") return <PatientDetail
+    patient={patient} doctor={doctor}
+    onBack={()=>go("dashboard")}
+    onNewAssessment={()=>{setEditAssessment(null);go("assessment");}}
+    onRedoAssessment={a=>{setEditAssessment(a);go("assessment");}}
+    onViewAssessment={(a,prev)=>{setAssessment(a);setPrevAssessment(prev);go("results");}}
+    onDeleted={()=>go("dashboard")}
+  />;
+  if(screen==="assessment") return <AssessmentForm
+    patient={patient} doctor={doctor}
+    onBack={()=>go("patientDetail")}
+    onSave={handleSaveAssessment}
+    editAssessment={editAssessment}
+  />;
+  if(screen==="results") return <Results assessment={assessment} prevAssessment={prevAssessment} patient={patient} doctor={doctor} onBack={()=>go("patientDetail")} onNewAssessment={()=>{setEditAssessment(null);go("assessment");}}/>;
   return null;
 }
