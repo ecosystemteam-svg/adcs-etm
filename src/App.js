@@ -888,26 +888,78 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onRedoAssessment,o
           <>
             {assessments.length>=1&&(
               <Card style={{marginBottom:20}}>
-                <h3 style={{margin:"0 0 16px",color:C.text,fontSize:16}}>📈 แนวโน้มคะแนน</h3>
-                <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,alignItems:"flex-end"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                  <h3 style={{margin:0,color:C.text,fontSize:16}}>📈 แนวโน้มคะแนนรวม</h3>
+                  <span style={{fontSize:12,color:C.textLight}}>กดแท่งเพื่อดูผล</span>
+                </div>
+                <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:4,alignItems:"flex-end",minHeight:110}}>
                   {[...assessments].reverse().map((a,i)=>{
                     const interp=getInterp(a.totalScore); const pct=(a.totalScore/MAX_TOTAL)*100;
                     const isLatest=i===assessments.length-1;
-                    return(<div key={a.id} style={{textAlign:"center",minWidth:72,cursor:"pointer"}}
-                      onClick={()=>onViewAssessment(a,i>0?[...assessments].reverse()[i-1]:null)}>
-                      <div style={{height:80,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+                    const prevA=i>0?[...assessments].reverse()[i-1]:null;
+                    const diff=prevA?a.totalScore-prevA.totalScore:null;
+                    return(<div key={a.id} style={{textAlign:"center",minWidth:64,cursor:"pointer",flexShrink:0}}
+                      onClick={()=>onViewAssessment(a, assessments[assessments.length-1-i+1]||null)}>
+                      {diff!==null&&(
+                        <div style={{fontSize:11,fontWeight:700,color:diff>0?C.green:diff<0?C.coral:"#9CA3AF",marginBottom:2}}>
+                          {diff>0?`+${diff}`:diff}
+                        </div>
+                      )}
+                      <div style={{height:72,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
                         <div style={{width:40,background:interp.color,borderRadius:"6px 6px 0 0",
-                          height:`${Math.max(pct,5)}%`,
-                          outline:isLatest?`2px solid ${interp.color}`:undefined,
-                          outlineOffset:2,opacity:isLatest?1:0.65}}/>
+                          height:`${Math.max(pct,8)}%`,opacity:isLatest?1:0.6,
+                          boxShadow:isLatest?`0 0 0 2px ${interp.color}40`:undefined,
+                          transition:"opacity .2s"}}/>
                       </div>
-                      <div style={{fontSize:13,fontWeight:700,color:interp.color,marginTop:4}}>{a.totalScore}</div>
+                      <div style={{fontSize:13,fontWeight:700,color:isLatest?interp.color:C.textMid,marginTop:4}}>{a.totalScore}</div>
                       <div style={{fontSize:10,color:C.textLight}}>ครั้ง {i+1}</div>
-                      <div style={{fontSize:10,color:C.textLight}}>{fmtDate(a.date).slice(0,8)}</div>
+                      <div style={{fontSize:9,color:C.textLight}}>{fmtDate(a.date).slice(0,8)}</div>
                     </div>);
                   })}
                 </div>
-                {assessments.length===1&&<div style={{fontSize:12,color:C.textLight,marginTop:8}}>📌 ประเมินครั้งถัดไปเพื่อดูแนวโน้มเปรียบเทียบ</div>}
+                {assessments.length===1&&(
+                  <div style={{fontSize:12,color:C.textLight,marginTop:8,padding:"8px 12px",background:"#F8FEFF",borderRadius:8}}>
+                    📌 ประเมินครั้งถัดไปเพื่อดูแนวโน้มเปรียบเทียบ
+                  </div>
+                )}
+                {assessments.length>=2&&(()=>{
+                  const latest=assessments[0]; const prev=assessments[1];
+                  const domainDefs=[
+                    {label:"กิจวัตรพื้นฐาน",qs:Q.slice(0,5),c:C.teal},
+                    {label:"แต่งตัว & สื่อสาร",qs:Q.slice(5,9),c:C.violet},
+                    {label:"กิจกรรมในบ้าน",qs:Q.slice(9,14),c:C.orange},
+                    {label:"นอกบ้าน & สังคม",qs:Q.slice(14,19),c:C.green},
+                    {label:"อ่าน เขียน งานอดิเรก",qs:Q.slice(19,23),c:C.coral},
+                  ];
+                  return(
+                    <div style={{marginTop:16,borderTop:`1px solid ${C.border}`,paddingTop:16}}>
+                      <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:10}}>📊 เปรียบเทียบรายด้าน (ล่าสุด vs ก่อนหน้า)</div>
+                      {domainDefs.map(d=>{
+                        const lScore=d.qs.reduce((s,q)=>s+getQScore(latest,q),0);
+                        const pScore=d.qs.reduce((s,q)=>s+getQScore(prev,q),0);
+                        const mx=d.qs.reduce((s,q)=>s+q.max,0);
+                        const diff2=lScore-pScore;
+                        return(
+                          <div key={d.label} style={{marginBottom:10}}>
+                            <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}>
+                              <span style={{color:C.textMid}}>{d.label}</span>
+                              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                <span style={{color:C.textLight}}>{pScore}/{mx}</span>
+                                <span style={{color:C.textMid}}>→</span>
+                                <span style={{fontWeight:700,color:d.c}}>{lScore}/{mx}</span>
+                                {diff2!==0&&<span style={{fontSize:11,fontWeight:700,color:diff2>0?C.green:C.coral}}>{diff2>0?`+${diff2}`:diff2}</span>}
+                              </div>
+                            </div>
+                            <div style={{height:8,borderRadius:99,background:C.border,position:"relative"}}>
+                              <div style={{height:"100%",width:`${(pScore/mx)*100}%`,background:`${d.c}50`,borderRadius:99,position:"absolute"}}/>
+                              <div style={{height:"100%",width:`${(lScore/mx)*100}%`,background:d.c,borderRadius:99,position:"absolute",transition:"width .5s"}}/>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </Card>
             )}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
@@ -929,24 +981,32 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onRedoAssessment,o
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 {assessments.map((a,i)=>{
                   const interp=getInterp(a.totalScore); const pct=Math.round((a.totalScore/MAX_TOTAL)*100);
-                  return(<Card key={a.id} style={{cursor:"pointer",padding:16}}
-                    onClick={()=>onViewAssessment(a,assessments[i+1]||null)}
-                    onMouseEnter={e=>e.currentTarget.style.boxShadow=C.shLg}
-                    onMouseLeave={e=>e.currentTarget.style.boxShadow=C.sh}>
+                  const prevA=assessments[i+1]||null;
+                  const diff=prevA?a.totalScore-prevA.totalScore:null;
+                  return(<Card key={a.id} style={{padding:16}}>
                     <div style={{display:"flex",alignItems:"center",gap:16}}>
-                      <div style={{position:"relative",width:60,height:60,flexShrink:0}}>
-                        <Ring pct={pct} size={60} stroke={6} color={interp.color}/>
-                        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:interp.color}}>{a.totalScore}</div>
+                      <div style={{position:"relative",width:64,height:64,flexShrink:0}}>
+                        <Ring pct={pct} size={64} stroke={6} color={interp.color}/>
+                        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:interp.color}}>{a.totalScore}</div>
                       </div>
-                      <div style={{flex:1}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <span style={{fontWeight:700,color:C.text}}>ครั้งที่ {assessments.length-i}</span>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                          <span style={{fontWeight:700,color:C.text,fontSize:15}}>ครั้งที่ {assessments.length-i}</span>
                           {i===0&&<span style={{background:C.tealLt,color:C.tealDk,fontSize:11,padding:"2px 8px",borderRadius:99,fontWeight:700}}>ล่าสุด</span>}
+                          {diff!==null&&(
+                            <span style={{fontSize:12,fontWeight:700,padding:"2px 8px",borderRadius:99,
+                              background:diff>0?"#ECFDF5":diff<0?"#FEF2F2":"#F3F4F6",
+                              color:diff>0?C.green:diff<0?C.coral:"#6B7280"}}>
+                              {diff>0?`▲ +${diff}`:diff<0?`▼ ${diff}`:"= คงเดิม"}
+                            </span>
+                          )}
                         </div>
-                        <div style={{color:C.textLight,fontSize:13}}>{fmtDate(a.date)}</div>
-                        <div style={{background:interp.bg,color:interp.color,fontSize:12,padding:"2px 10px",borderRadius:99,marginTop:4,display:"inline-block",fontWeight:600}}>{interp.icon} {interp.label}</div>
+                        <div style={{color:C.textLight,fontSize:13,marginTop:2}}>{fmtDate(a.date)}</div>
+                        <div style={{background:interp.bg,color:interp.color,fontSize:12,padding:"2px 10px",borderRadius:99,marginTop:6,display:"inline-block",fontWeight:600}}>{interp.icon} {interp.label}</div>
                       </div>
-                      <div style={{color:C.textLight}}>›</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:8,flexShrink:0}}>
+                        <Btn sm onClick={()=>onViewAssessment(a,prevA)}>📊 ดูผล</Btn>
+                      </div>
                     </div>
                   </Card>);
                 })}
