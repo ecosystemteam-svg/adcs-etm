@@ -1,6 +1,3 @@
-
-Copy
-
 import { useState, useEffect, useRef } from "react";
 
 // ============================================================
@@ -1078,6 +1075,37 @@ const AdminDash = ({onBack})=>{
   const [allData,setAllData]=useState(null);
   const [tab,setTab]=useState("overview");
   const [selA,setSelA]=useState(null);
+
+  // PDPA Editor
+  const [pdpaEdit,setPdpaEdit]=useState(PDPA_TEXT);
+  const [pdpaSaved,setPdpaSaved]=useState(false);
+
+  // Invite Codes (stored in-state; admin can generate & copy)
+  const [codes,setCodes]=useState([
+    {id:"default",code:INVITE_CODE,type:"lifelong",expiry:"",uses:0,active:true,createdAt:new Date().toISOString()}
+  ]);
+  const [newCode,setNewCode]=useState("");
+  const [newType,setNewType]=useState("lifelong");
+  const [newExpiry,setNewExpiry]=useState("");
+  const [codeMsg,setCodeMsg]=useState("");
+
+  const genRandom=()=>{
+    const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    return "ETM-"+Array.from({length:4},()=>chars[Math.floor(Math.random()*chars.length)]).join("")+
+      "-"+Array.from({length:4},()=>chars[Math.floor(Math.random()*chars.length)]).join("");
+  };
+  const addCode=()=>{
+    const c=newCode.trim()||genRandom();
+    if(codes.find(x=>x.code===c)){setCodeMsg("Code นี้มีอยู่แล้ว");return;}
+    if(newType==="timed"&&!newExpiry){setCodeMsg("กรุณาระบุวันหมดอายุ");return;}
+    setCodes(prev=>[...prev,{id:uid(),code:c,type:newType,expiry:newExpiry,uses:0,active:true,createdAt:new Date().toISOString()}]);
+    setNewCode(""); setNewExpiry(""); setCodeMsg("✅ เพิ่ม Code สำเร็จ");
+    setTimeout(()=>setCodeMsg(""),3000);
+  };
+  const toggleCode=(id)=>setCodes(prev=>prev.map(c=>c.id===id?{...c,active:!c.active}:c));
+  const deleteCode=(id)=>setCodes(prev=>prev.filter(c=>c.id!==id));
+  const isExpired=(c)=>c.type==="timed"&&c.expiry&&new Date(c.expiry)<new Date();
+
   useEffect(()=>{ (async()=>{ const {data}=await api.getAllData(); setAllData(data); })(); },[]);
   if(!allData) return <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center"}}><Loader text="กำลังโหลดข้อมูลจาก Google Sheets..."/></div>;
   const {doctors=[],patients=[],assessments=[]}=allData;
@@ -1086,6 +1114,14 @@ const AdminDash = ({onBack})=>{
   const scoreGroups=[
     {label:"สูง (≥63)",min:63,max:78,color:C.green},{label:"ปานกลาง-สูง (47-62)",min:47,max:62,color:"#3B82F6"},
     {label:"ปานกลาง (31-46)",min:31,max:46,color:C.yellow},{label:"ต่ำ (≤30)",min:0,max:30,color:C.coral},
+  ];
+  const TABS=[
+    {id:"overview",label:"📊 ภาพรวม"},
+    {id:"doctors",label:"👨‍⚕️ แพทย์"},
+    {id:"patients",label:"👥 ผู้ป่วย"},
+    {id:"assessments",label:"📝 การประเมิน"},
+    {id:"codes",label:"🔑 Invite Codes"},
+    {id:"pdpa",label:"📋 แก้ PDPA"},
   ];
   return(
     <div style={{minHeight:"100vh",background:C.bg}}>
@@ -1109,11 +1145,11 @@ const AdminDash = ({onBack})=>{
           ))}
         </div>
         <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
-          {["overview","doctors","patients","assessments"].map(t=>(
-            <button key={t} onClick={()=>setTab(t)} style={{padding:"8px 18px",borderRadius:99,border:"none",cursor:"pointer",
-              fontSize:13,fontWeight:600,fontFamily:"inherit",background:tab===t?C.violet:"#fff",
-              color:tab===t?"#fff":C.textMid,boxShadow:C.sh}}>
-              {t==="overview"?"ภาพรวม":t==="doctors"?"แพทย์":t==="patients"?"ผู้ป่วย":"การประเมิน"}
+          {TABS.map(t=>(
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:"8px 18px",borderRadius:99,border:"none",cursor:"pointer",
+              fontSize:13,fontWeight:600,fontFamily:"inherit",background:tab===t.id?C.violet:"#fff",
+              color:tab===t.id?"#fff":C.textMid,boxShadow:C.sh}}>
+              {t.label}
             </button>
           ))}
         </div>
@@ -1234,6 +1270,97 @@ const AdminDash = ({onBack})=>{
             </div>);
           })}
         </Card>))}
+
+        {/* ── TAB: INVITE CODES ── */}
+        {tab==="codes"&&(<div>
+          <Card style={{marginBottom:20}}>
+            <h3 style={{margin:"0 0 16px",color:C.text}}>🔑 สร้าง Invite Code ใหม่</h3>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:6}}>Code (ปล่อยว่างให้ระบบ Gen อัตโนมัติ)</div>
+                <input value={newCode} onChange={e=>setNewCode(e.target.value.toUpperCase())} placeholder="เช่น ETM-XXXX-XXXX"
+                  style={{width:"100%",border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 14px",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",background:"#F8FEFF"}}/>
+              </div>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:6}}>ประเภท</div>
+                <select value={newType} onChange={e=>setNewType(e.target.value)}
+                  style={{width:"100%",border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 14px",fontSize:14,fontFamily:"inherit",outline:"none",boxSizing:"border-box",background:"#F8FEFF"}}>
+                  <option value="lifelong">♾️ ตลอดไป (Lifelong)</option>
+                  <option value="timed">⏳ มีวันหมดอายุ (Timed)</option>
+                </select>
+              </div>
+            </div>
+            {newType==="timed"&&(<div style={{marginBottom:12}}>
+              <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:6}}>วันหมดอายุ</div>
+              <input type="date" value={newExpiry} onChange={e=>setNewExpiry(e.target.value)}
+                style={{border:`1.5px solid ${C.border}`,borderRadius:10,padding:"10px 14px",fontSize:14,fontFamily:"inherit",outline:"none",background:"#F8FEFF"}}/>
+            </div>)}
+            {codeMsg&&<div style={{fontSize:13,color:codeMsg.startsWith("✅")?C.green:C.coral,marginBottom:10,padding:"8px 12px",background:codeMsg.startsWith("✅")?"#ECFDF5":"#FEF2F2",borderRadius:8}}>{codeMsg}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <Btn onClick={addCode}>➕ เพิ่ม Code</Btn>
+              <Btn variant="outline" onClick={()=>setNewCode(genRandom())}>🎲 Gen Random</Btn>
+            </div>
+          </Card>
+          <Card>
+            <h3 style={{margin:"0 0 16px",color:C.text}}>รายการ Invite Codes ({codes.length} รายการ)</h3>
+            {codes.length===0&&<div style={{color:C.textLight,fontSize:14}}>ยังไม่มี Code</div>}
+            {codes.map(c=>{
+              const expired=isExpired(c);
+              const statusColor=!c.active?"#9CA3AF":expired?C.coral:C.green;
+              const statusLabel=!c.active?"ปิดใช้งาน":expired?"หมดอายุ":"ใช้งานได้";
+              return(<div key={c.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 14px",borderRadius:10,
+                background:!c.active||expired?"#F9FAFB":"#F0FDF4",border:`1.5px solid ${!c.active||expired?C.border:"#86EFAC"}`,marginBottom:10}}>
+                <div style={{flex:1}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontWeight:700,fontSize:15,fontFamily:"monospace",color:C.text,letterSpacing:1}}>{c.code}</span>
+                    <button onClick={()=>{navigator.clipboard.writeText(c.code);}}
+                      style={{fontSize:11,padding:"2px 8px",borderRadius:6,border:`1px solid ${C.border}`,background:"#fff",cursor:"pointer",color:C.textMid}}>📋 Copy</button>
+                  </div>
+                  <div style={{fontSize:12,color:C.textLight,marginTop:3}}>
+                    {c.type==="lifelong"?"♾️ ตลอดไป":`⏳ หมดอายุ: ${c.expiry||"-"}`}
+                    {" · "}ใช้แล้ว {c.uses} ครั้ง
+                    {" · "}สร้างเมื่อ {fmtDate(c.createdAt)}
+                  </div>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:12,fontWeight:700,color:statusColor,background:statusColor+"20",padding:"3px 10px",borderRadius:99}}>{statusLabel}</span>
+                  {c.id!=="default"&&(<>
+                    <button onClick={()=>toggleCode(c.id)}
+                      style={{fontSize:12,padding:"5px 12px",borderRadius:8,border:`1.5px solid ${C.border}`,background:"#fff",cursor:"pointer",fontFamily:"inherit",color:C.textMid}}>
+                      {c.active?"ปิด":"เปิด"}
+                    </button>
+                    <button onClick={()=>deleteCode(c.id)}
+                      style={{fontSize:12,padding:"5px 10px",borderRadius:8,border:"1.5px solid #FCA5A5",background:"#FEF2F2",cursor:"pointer",color:"#DC2626"}}>🗑️</button>
+                  </>)}
+                </div>
+              </div>);
+            })}
+            <div style={{marginTop:16,padding:"12px 14px",background:"#FFFBEB",borderRadius:10,fontSize:13,color:"#92400E",border:"1px solid #FDE68A"}}>
+              ⚠️ <b>หมายเหตุ:</b> Invite Code เหล่านี้จัดเก็บใน browser session เท่านั้น หากต้องการเปลี่ยน Code ถาวร ให้แก้ค่า <code>INVITE_CODE</code> ในไฟล์ App.js บรรทัดที่ 11
+            </div>
+          </Card>
+        </div>)}
+
+        {/* ── TAB: PDPA EDITOR ── */}
+        {tab==="pdpa"&&(<Card>
+          <h3 style={{margin:"0 0 8px",color:C.text}}>📋 แก้ไขข้อความ PDPA</h3>
+          <p style={{fontSize:13,color:C.textLight,margin:"0 0 16px"}}>ข้อความนี้จะแสดงให้แพทย์อ่านก่อนลงทะเบียน หมายเหตุ: การแก้ไขที่นี่มีผลใน session นี้เท่านั้น หากต้องการแก้ถาวรให้แก้ค่า PDPA_TEXT ในไฟล์ App.js บรรทัดที่ 16</p>
+          <textarea value={pdpaEdit} onChange={e=>setPdpaEdit(e.target.value)}
+            style={{width:"100%",minHeight:320,border:`1.5px solid ${C.border}`,borderRadius:10,padding:"12px 14px",
+              fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"vertical",lineHeight:1.7,color:C.text}}/>
+          <div style={{marginTop:8,fontSize:12,color:C.textLight}}>ตัวอักษร: {pdpaEdit.length}</div>
+          <div style={{marginTop:16,display:"flex",gap:10,alignItems:"center"}}>
+            <Btn variant="green" onClick={()=>{setPdpaSaved(true);setTimeout(()=>setPdpaSaved(false),3000);}}>💾 บันทึก (Session นี้)</Btn>
+            <Btn variant="outline" onClick={()=>{setPdpaEdit(PDPA_TEXT);}}>↺ Reset เป็นค่าเดิม</Btn>
+            {pdpaSaved&&<span style={{color:C.green,fontSize:13,fontWeight:600}}>✅ บันทึกแล้ว</span>}
+          </div>
+          <div style={{marginTop:20}}>
+            <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:10}}>👁️ Preview</div>
+            <div style={{background:"#F8FEFF",border:`1.5px solid ${C.border}`,borderRadius:10,padding:"14px 16px",
+              fontSize:13,color:C.textMid,lineHeight:1.7,maxHeight:250,overflowY:"auto",whiteSpace:"pre-wrap"}}>{pdpaEdit}</div>
+          </div>
+        </Card>)}
+
       </div>
     </div>
   );
