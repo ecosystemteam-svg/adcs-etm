@@ -1,3 +1,6 @@
+
+Copy
+
 import { useState, useEffect, useRef } from "react";
 
 // ============================================================
@@ -156,12 +159,45 @@ const Q = [
    opts:[{v:3,l:"จดหมายหรือบันทึกยาว ที่ผู้อื่นอ่านเข้าใจ"},{v:2,l:"โน้ตหรือข้อความสั้น ที่ผู้อื่นอ่านเข้าใจ"},{v:1,l:"ลายเซ็นหรือชื่อของตนเอง"}]},
   {id:"q22",num:22,title:"งานอดิเรก/กิจกรรมยามว่าง/เกม",en:"Hobbies",hasYN:true,
    desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินมีการทำงานอดิเรก กิจกรรมยามว่าง หรือเกมหรือไม่?",
-   ynLabel:"ผู้ถูกประเมินมีงานอดิเรก/กิจกรรมยามว่าง/เกมหรือไม่?",max:3,
-   note:"หมายเหตุ: ไพ่/กระดาน (บริดจ์ หมากรุก หมากฮอส), บิงโก, ปริศนาอักษรไขว้, เครื่องดนตรี, ถักไหมพรม, เย็บผ้า, อ่านหนังสือ, ทำสวน, กอล์ฟ, เทนนิส, งานฝีมือ/ช่างซ่อม, ตกปลา — 'การเดิน' อย่างเดียว ไม่นับเป็นงานอดิเรก",
+   ynLabel:"ผู้ถูกประเมินมีงานอดิเรก/กิจกรรมยามว่าง/เกมหรือไม่?",max:3,type:"multi_check",
+   itemLabel:"โปรดทำเครื่องหมาย (ได้หลายข้อ):",
+   items:[
+     {id:"q22_cards",l:"ไพ่/กระดาน (บริดจ์ หมากรุก หมากฮอส)"},
+     {id:"q22_bingo",l:"บิงโก"},
+     {id:"q22_cross",l:"ปริศนาอักษรไขว้"},
+     {id:"q22_music",l:"เครื่องดนตรี"},
+     {id:"q22_knit",l:"ถักไหมพรม"},
+     {id:"q22_sew",l:"เย็บผ้า"},
+     {id:"q22_read",l:"อ่านหนังสือ"},
+     {id:"q22_garden",l:"ทำสวน"},
+     {id:"q22_golf",l:"กอล์ฟ"},
+     {id:"q22_tennis",l:"เทนนิส"},
+     {id:"q22_workshop",l:"เวิร์กช็อป/งานฝีมือ/ช่างซ่อม"},
+     {id:"q22_fish",l:"ตกปลา"},
+     {id:"q22_other",l:"อื่น ๆ"},
+   ],
+   daycareId:"q22_daycare",
+   note:"หมายเหตุ: 'การเดิน' อย่างเดียว ไม่นับเป็นงานอดิเรกสำหรับแบบประเมินนี้",
+   scoreLabel:"ให้เลือกระดับสำหรับงานอดิเรก (เลือกที่ทำบ่อยที่สุด และตอบระดับในสิ่งที่ทำ):",
    opts:[{v:3,l:"ทำได้เอง โดยไม่ต้องมีคนช่วย"},{v:2,l:"ทำได้แต่ต้องมีผู้กำกับการทำ"},{v:1,l:"ต้องช่วยเหลือ"}]},
   {id:"q23",num:23,title:"ใช้เครื่องใช้ไฟฟ้าในบ้านเพื่อทำงานบ้าน",en:"Household Appliances",hasYN:true,
-   ynLabel:"ผู้ถูกประเมินใช้เครื่องใช้ไฟฟ้าในบ้านหรือไม่?",max:4,
-   opts:[{v:4,l:"ใช้ได้เอง รวมถึงควบคุมปุ่มมากกว่าเปิด-ปิด หากจำเป็น"},{v:3,l:"ใช้ได้เอง แต่ควบคุมเฉพาะปุ่มเปิด-ปิด"},{v:2,l:"ใช้ได้เมื่อมีการกำกับ แต่ไม่ต้องช่วยทางกาย"},{v:1,l:"ใช้ได้เมื่อมีการช่วยทางกาย"}]},
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินมีการใช้เครื่องใช้ไฟฟ้าเพื่อทำงานบ้านหรือไม่?",
+   ynLabel:"ผู้ถูกประเมินใช้เครื่องใช้ไฟฟ้าในบ้านหรือไม่?",max:4,type:"multi_check",
+   itemLabel:"โปรดระบุสิ่งที่ใช้ (ได้หลายข้อ):",
+   items:[
+     {id:"q23_wash",l:"เครื่องซักผ้า"},
+     {id:"q23_dry",l:"เครื่องอบผ้า"},
+     {id:"q23_vac",l:"เครื่องดูดฝุ่น"},
+     {id:"q23_dish",l:"เครื่องล้างจาน"},
+     {id:"q23_toast",l:"เครื่องปิ้งขนมปัง"},
+     {id:"q23_oven",l:"เตาปิ้ง/เตาอบเล็ก"},
+     {id:"q23_stove",l:"เตาทำอาหาร"},
+     {id:"q23_micro",l:"ไมโครเวฟ"},
+     {id:"q23_blend",l:"เครื่องปั่นอาหาร"},
+     {id:"q23_other",l:"อื่น ๆ"},
+   ],
+   scoreLabel:"เลือกระดับจากเครื่องที่ใช้บ่อยที่สุด (เลือกที่ใช้บ่อยที่สุด และตอบระดับในสิ่งที่ใช้):",
+   opts:[{v:4,l:"ใช้ได้เอง รวมถึงควบคุมปุ่มมากกว่าเปิด–ปิด หากจำเป็น"},{v:3,l:"ใช้ได้เอง แต่ควบคุมเฉพาะปุ่มเปิด–ปิด"},{v:2,l:"ใช้ได้เมื่อมีการกำกับ แต่ไม่ต้องช่วยทางกาย"},{v:1,l:"ใช้ได้เมื่อมีการช่วยทางกาย"}]},
 ];
 
 // ============================================================
@@ -818,6 +854,41 @@ const AssessmentForm = ({patient,doctor,onBack,onSave})=>{
                   background:a[s.id]===v?C.tealBg:"#fff",color:a[s.id]===v?C.tealDk:C.textMid,cursor:"pointer",fontFamily:"inherit",fontSize:13}}>{v}</button>))}
             </div>
           </div>))}<div style={{fontSize:12,color:C.textLight}}>คะแนน: {(q.subs||[]).filter(s=>a[s.id]==="ใช่").length} / {q.max}</div></div>)}
+          {q.type==="multi_check"&&q.items&&(<div>
+            <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:10}}>{q.itemLabel}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:14}}>
+              {q.items.map(item=>{
+                const checked=a[item.id]===true;
+                return(<div key={item.id} onClick={()=>setAnswer(q.id,item.id,!checked)}
+                  style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderRadius:8,cursor:"pointer",
+                    border:`1.5px solid ${checked?C.teal:C.border}`,background:checked?C.tealBg:"#fff",userSelect:"none"}}>
+                  <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${checked?C.teal:C.border}`,background:checked?C.teal:"#fff",
+                    display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                    {checked&&<span style={{color:"#fff",fontSize:11,fontWeight:700}}>✓</span>}
+                  </div>
+                  <span style={{fontSize:13,color:checked?C.tealDk:C.text}}>{item.l}</span>
+                </div>);
+              })}
+            </div>
+            {q.daycareId&&(<div onClick={()=>setAnswer(q.id,q.daycareId,!a[q.daycareId])}
+              style={{display:"flex",alignItems:"center",gap:8,padding:"7px 12px",borderRadius:8,cursor:"pointer",marginBottom:14,
+                border:`1.5px solid ${a[q.daycareId]?C.orange:"#FED7AA"}`,background:a[q.daycareId]?"#FFF7ED":"#FFFBF5",userSelect:"none"}}>
+              <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${a[q.daycareId]?C.orange:"#FED7AA"}`,background:a[q.daycareId]?C.orange:"#fff",
+                display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                {a[q.daycareId]&&<span style={{color:"#fff",fontSize:11,fontWeight:700}}>✓</span>}
+              </div>
+              <span style={{fontSize:13,color:"#92400E"}}>หากทำเฉพาะที่ศูนย์ดูแลกลางวัน (Day Care) ให้ทำเครื่องหมายที่นี่</span>
+            </div>)}
+            {q.note&&<div style={{fontSize:12,color:C.textLight,marginBottom:12,background:"#FFFBEB",padding:"7px 10px",borderRadius:6}}>{q.note}</div>}
+            <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:10}}>{q.scoreLabel}</div>
+            {q.opts.map(o=>(<div key={o.v} onClick={()=>setAnswer(q.id,"score",o.v)}
+              style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",borderRadius:10,marginBottom:8,cursor:"pointer",
+                border:`1.5px solid ${a.score===o.v?C.teal:C.border}`,background:a.score===o.v?C.tealBg:"#fff"}}>
+              <div style={{width:28,height:28,borderRadius:7,background:a.score===o.v?C.teal:C.border,color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0}}>{o.v}</div>
+              <div style={{fontSize:14,color:a.score===o.v?C.tealDk:C.text,flex:1}}>{o.l}</div>
+              {a.score===o.v&&<div style={{color:C.teal}}>✓</div>}
+            </div>))}
+          </div>)}
           {q.type==="binary"&&(<div>
             <div style={{fontSize:14,color:C.textMid,marginBottom:10}}>{q.label}</div>
             <div style={{display:"flex",gap:8}}>{q.opts.map(o=>(<button key={o.v} onClick={()=>setAnswer(q.id,"score",o.v)}
