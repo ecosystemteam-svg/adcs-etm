@@ -396,7 +396,7 @@ const Select = ({label,value,onChange,options,required=false})=>(
     </select>
   </div>
 );
-const Card = ({children,style={}})=>(<div style={{background:C.card,borderRadius:16,boxShadow:C.sh,padding:24,...style}}>{children}</div>);
+const Card = ({children,style={},onClick,onMouseEnter,onMouseLeave})=>(<div onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{background:C.card,borderRadius:16,boxShadow:C.sh,padding:24,...style}}>{children}</div>);
 const Ring = ({pct,size=80,stroke=8,color=C.teal})=>{
   const r=size/2-stroke/2; const circ=2*Math.PI*r; const off=circ*(1-pct/100);
   return <svg width={size} height={size} style={{transform:"rotate(-90deg)"}}>
@@ -451,7 +451,7 @@ const Register = ({onBack,onSuccess})=>{
   const [pdpaAccepted,setPdpaAccepted]=useState(false);
   const [inviteInput,setInviteInput]=useState("");
   const [inviteErr,setInviteErr]=useState("");
-  const [f,setF]=useState({firstName:"",lastName:"",license:"",pass:"",pass2:""});
+  const [f,setF]=useState({title:"นพ.",firstName:"",lastName:"",email:"",license:"",pass:"",pass2:""});
   const [err,setErr]=useState(""); const [loading,setLoading]=useState(false);
   const [done,setDone]=useState(false);
   const update=k=>v=>setF({...f,[k]:v});
@@ -462,7 +462,8 @@ const Register = ({onBack,onSuccess})=>{
   };
 
   const submit=async()=>{
-    if(!f.firstName||!f.lastName||!f.license||!f.pass) return setErr("กรุณากรอกข้อมูลให้ครบ");
+    if(!f.firstName||!f.lastName||!f.email||!f.license||!f.pass) return setErr("กรุณากรอกข้อมูลให้ครบ");
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return setErr("รูปแบบ Email ไม่ถูกต้อง");
     if(f.pass!==f.pass2) return setErr("รหัสผ่านไม่ตรงกัน");
     if(f.pass.length<6) return setErr("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
     setLoading(true); setErr("");
@@ -471,8 +472,12 @@ const Register = ({onBack,onSuccess})=>{
       if(docs.find(d=>String(d.license).trim()===String(f.license).trim())) {
         setErr("เลข ว. นี้มีในระบบแล้ว"); setLoading(false); return;
       }
-      const doc={id:uid(),firstName:f.firstName.trim(),lastName:f.lastName.trim(),
-        license:f.license.trim(),pass:f.pass,role:"doctor",createdAt:new Date().toISOString()};
+      if(docs.find(d=>String(d.email||"").trim().toLowerCase()===f.email.trim().toLowerCase())) {
+        setErr("Email นี้มีในระบบแล้ว"); setLoading(false); return;
+      }
+      const doc={id:uid(),title:f.title,firstName:f.firstName.trim(),lastName:f.lastName.trim(),
+        email:f.email.trim().toLowerCase(),license:f.license.trim(),pass:f.pass,
+        role:"doctor",createdAt:new Date().toISOString()};
       await api.saveDoctor(doc);
       setDone(true);
     } catch(e){ setErr("เชื่อมต่อ server ไม่ได้ — ตรวจสอบ GAS_URL"); }
@@ -484,7 +489,7 @@ const Register = ({onBack,onSuccess})=>{
       <Card style={{width:"100%",maxWidth:460,textAlign:"center"}}>
         <div style={{fontSize:52,marginBottom:12}}>✅</div>
         <h2 style={{color:"#059669",margin:"0 0 8px"}}>ลงทะเบียนสำเร็จ!</h2>
-        <p style={{color:C.textMid,fontSize:14,marginBottom:8}}>นพ./พญ. {f.firstName} {f.lastName}</p>
+        <p style={{color:C.textMid,fontSize:14,marginBottom:8}}>{f.title} {f.firstName} {f.lastName}</p>
         <p style={{color:C.textLight,fontSize:13,marginBottom:24}}>กรุณาเข้าสู่ระบบด้วยเลข ว. และรหัสผ่านที่ลงทะเบียนไว้</p>
         <Btn full onClick={onSuccess}>🔑 ไปหน้าเข้าสู่ระบบ</Btn>
       </Card>
@@ -525,10 +530,30 @@ const Register = ({onBack,onSuccess})=>{
   // Step 2: Registration Form
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
-      <Card style={{width:"100%",maxWidth:460}}>
+      <Card style={{width:"100%",maxWidth:480}}>
         <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:36}}>📝</div><h2 style={{margin:"8px 0 0",color:C.text}}>ลงทะเบียนแพทย์</h2></div>
-        <Input label="ชื่อ" value={f.firstName} onChange={update("firstName")} required/>
-        <Input label="นามสกุล" value={f.lastName} onChange={update("lastName")} required/>
+
+        {/* คำนำหน้า */}
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:13,fontWeight:600,color:C.textMid,marginBottom:8}}>คำนำหน้า <span style={{color:C.coral}}>*</span></div>
+          <div style={{display:"flex",gap:10}}>
+            {["นพ.","พญ."].map(t=>(
+              <div key={t} onClick={()=>update("title")(t)}
+                style={{flex:1,padding:"10px",textAlign:"center",borderRadius:10,cursor:"pointer",fontWeight:700,fontSize:15,
+                  border:`2px solid ${f.title===t?C.teal:C.border}`,
+                  background:f.title===t?C.tealBg:"#fff",
+                  color:f.title===t?C.tealDk:C.textMid}}>
+                {t}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <Input label="ชื่อ" value={f.firstName} onChange={update("firstName")} required/>
+          <Input label="นามสกุล" value={f.lastName} onChange={update("lastName")} required/>
+        </div>
+        <Input label="อีเมล (ใช้สำหรับ Reset รหัสผ่าน)" value={f.email} onChange={update("email")} type="email" required placeholder="doctor@hospital.com"/>
         <Input label="เลข ว. (ใบประกอบวิชาชีพเวชกรรม)" value={f.license} onChange={update("license")} required hint="เช่น 12345"/>
         <Input label="รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)" value={f.pass} onChange={update("pass")} type="password" required/>
         <Input label="ยืนยันรหัสผ่าน" value={f.pass2} onChange={update("pass2")} type="password" required/>
@@ -541,9 +566,92 @@ const Register = ({onBack,onSuccess})=>{
 };
 
 // ============================================================
+// SCREEN: Forgot Password
+// ============================================================
+const ForgotPassword = ({onBack})=>{
+  const [step,setStep]=useState(0); // 0=verify, 1=reset
+  const [license,setLicense]=useState("");
+  const [email,setEmail]=useState("");
+  const [newPass,setNewPass]=useState("");
+  const [newPass2,setNewPass2]=useState("");
+  const [err,setErr]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [foundDoc,setFoundDoc]=useState(null);
+  const [done,setDone]=useState(false);
+
+  const verify=async()=>{
+    if(!license||!email) return setErr("กรุณากรอกข้อมูลให้ครบ");
+    setLoading(true); setErr("");
+    try {
+      const {data:docs=[]}=await api.getDoctors();
+      const doc=docs.find(d=>
+        String(d.license).trim()===String(license).trim()&&
+        String(d.email||"").trim().toLowerCase()===email.trim().toLowerCase()
+      );
+      if(!doc){setErr("ไม่พบบัญชีที่ตรงกับเลข ว. และ Email นี้");setLoading(false);return;}
+      setFoundDoc(doc); setStep(1);
+    } catch{ setErr("เชื่อมต่อ server ไม่ได้"); }
+    setLoading(false);
+  };
+
+  const resetPass=async()=>{
+    if(!newPass||!newPass2) return setErr("กรุณากรอกรหัสผ่านใหม่");
+    if(newPass!==newPass2) return setErr("รหัสผ่านไม่ตรงกัน");
+    if(newPass.length<6) return setErr("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+    setLoading(true); setErr("");
+    try {
+      await api.saveDoctor({...foundDoc,pass:newPass});
+      setDone(true);
+    } catch{ setErr("บันทึกไม่สำเร็จ กรุณาลองใหม่"); }
+    setLoading(false);
+  };
+
+  if(done) return(
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <Card style={{width:"100%",maxWidth:420,textAlign:"center"}}>
+        <div style={{fontSize:52,marginBottom:12}}>✅</div>
+        <h2 style={{color:"#059669",margin:"0 0 8px"}}>เปลี่ยนรหัสผ่านสำเร็จ!</h2>
+        <p style={{color:C.textLight,fontSize:13,marginBottom:24}}>กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่</p>
+        <Btn full onClick={onBack}>🔑 ไปหน้าเข้าสู่ระบบ</Btn>
+      </Card>
+    </div>
+  );
+
+  return(
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <Card style={{width:"100%",maxWidth:420}}>
+        {step===0?(<>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:36}}>🔓</div>
+            <h2 style={{margin:"8px 0 4px",color:C.text}}>ลืมรหัสผ่าน</h2>
+            <p style={{color:C.textLight,fontSize:13,margin:0}}>กรอกเลข ว. และ Email ที่ลงทะเบียนไว้</p>
+          </div>
+          <Input label="เลข ว." value={license} onChange={setLicense} required placeholder="เช่น 12345"/>
+          <Input label="Email ที่ลงทะเบียน" value={email} onChange={setEmail} type="email" required placeholder="doctor@hospital.com"/>
+          <ErrBox msg={err}/>
+          <Btn full onClick={verify} disabled={loading}>{loading?"⏳ กำลังตรวจสอบ...":"ยืนยันตัวตน →"}</Btn>
+          <Btn full variant="ghost" onClick={onBack} style={{marginTop:8}}>← กลับ</Btn>
+        </>):(<>
+          <div style={{textAlign:"center",marginBottom:24}}>
+            <div style={{fontSize:36}}>🔏</div>
+            <h2 style={{margin:"8px 0 4px",color:C.text}}>ตั้งรหัสผ่านใหม่</h2>
+            <p style={{color:C.textLight,fontSize:13,margin:0}}>{foundDoc?.title||""} {foundDoc?.firstName} {foundDoc?.lastName}</p>
+          </div>
+          <Input label="รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)" value={newPass} onChange={setNewPass} type="password" required/>
+          <Input label="ยืนยันรหัสผ่านใหม่" value={newPass2} onChange={setNewPass2} type="password" required/>
+          <ErrBox msg={err}/>
+          <Btn full variant="green" onClick={resetPass} disabled={loading}>{loading?"⏳ กำลังบันทึก...":"💾 บันทึกรหัสผ่านใหม่"}</Btn>
+          <Btn full variant="ghost" onClick={()=>setStep(0)} style={{marginTop:8}}>← กลับ</Btn>
+        </>)}
+      </Card>
+    </div>
+  );
+};
+
+// ============================================================
 // SCREEN: Login
 // ============================================================
-const Login = ({onBack,onSuccess})=>{
+const Login = ({onBack,onSuccess,onForgot})=>{
   const [license,setLicense]=useState(""); const [pass,setPass]=useState("");
   const [err,setErr]=useState(""); const [loading,setLoading]=useState(false);
   const submit=async()=>{
@@ -564,7 +672,12 @@ const Login = ({onBack,onSuccess})=>{
         <Input label="รหัสผ่าน" value={pass} onChange={setPass} type="password" required/>
         <ErrBox msg={err}/>
         <Btn full onClick={submit} disabled={loading}>{loading?"⏳ กำลังตรวจสอบ...":"เข้าสู่ระบบ"}</Btn>
-        <Btn full variant="ghost" onClick={onBack} style={{marginTop:8}}>← กลับ</Btn>
+        <div style={{textAlign:"center",marginTop:12}}>
+          <button onClick={onForgot} style={{background:"none",border:"none",color:C.teal,cursor:"pointer",fontSize:13,fontFamily:"inherit",textDecoration:"underline"}}>
+            ลืมรหัสผ่าน?
+          </button>
+        </div>
+        <Btn full variant="ghost" onClick={onBack} style={{marginTop:4}}>← กลับ</Btn>
       </Card>
     </div>
   );
@@ -611,7 +724,7 @@ const Dashboard = ({doctor,onLogout,onNewPatient,onSelectPatient,onAdmin})=>{
         <div style={{maxWidth:900,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12}}>
           <div>
             <div style={{fontSize:12,opacity:0.8}}>🧠 ADCS-MCI-ADL · ETM</div>
-            <h2 style={{margin:0,fontSize:20}}>สวัสดี, นพ./พญ. {doctor.firstName} {doctor.lastName}</h2>
+            <h2 style={{margin:0,fontSize:20}}>สวัสดี, {doctor.title||"นพ./พญ."} {doctor.firstName} {doctor.lastName}</h2>
             <div style={{fontSize:12,opacity:0.75}}>เลข ว. {doctor.license}</div>
           </div>
           <div style={{display:"flex",gap:8}}>
@@ -709,9 +822,12 @@ const NewPatient = ({doctor,onBack,onSuccess})=>{
 // ============================================================
 // SCREEN: Patient Detail
 // ============================================================
-const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment})=>{
+const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment,onDeleted})=>{
   const [assessments,setAssessments]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [confirmDel,setConfirmDel]=useState(false);
+  const [deleting,setDeleting]=useState(false);
+
   useEffect(()=>{
     (async()=>{
       const {data=[]}=await api.getAssessments(patient.id);
@@ -719,11 +835,28 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment})
       setLoading(false);
     })();
   },[]);
+
+  const deletePatient=async()=>{
+    setDeleting(true);
+    try {
+      // บันทึกสถานะลบโดย savePatient ด้วย deleted flag
+      await api.savePatient({...patient,deleted:true});
+      onDeleted();
+    } catch{ alert("ลบไม่สำเร็จ กรุณาลองใหม่"); }
+    setDeleting(false);
+  };
+
   return(
     <div style={{minHeight:"100vh",background:C.bg}}>
       <div style={{background:GRAD,padding:"20px 24px",color:"#fff"}}>
         <div style={{maxWidth:800,margin:"0 auto"}}>
-          <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:14,marginBottom:12}}>← กลับ</button>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:14}}>← กลับ</button>
+            <button onClick={()=>setConfirmDel(true)}
+              style={{background:"rgba(239,68,68,0.25)",border:"1.5px solid rgba(239,68,68,0.5)",color:"#fff",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:13,fontFamily:"inherit"}}>
+              🗑️ ลบผู้ป่วย
+            </button>
+          </div>
           <div style={{display:"flex",alignItems:"center",gap:16}}>
             <div style={{width:56,height:56,borderRadius:16,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{patient.gender==="ชาย"?"👨":"👩"}</div>
             <div>
@@ -733,6 +866,23 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment})
           </div>
         </div>
       </div>
+
+      {/* Confirm Delete Modal */}
+      {confirmDel&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div style={{background:"#fff",borderRadius:16,padding:28,maxWidth:380,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+            <div style={{fontSize:48,marginBottom:12}}>⚠️</div>
+            <h3 style={{color:C.text,margin:"0 0 8px"}}>ยืนยันการลบผู้ป่วย?</h3>
+            <p style={{color:C.textMid,fontSize:14,marginBottom:8}}>{patient.firstName} {patient.lastName}</p>
+            <p style={{color:C.coral,fontSize:13,marginBottom:24}}>ข้อมูลและประวัติการประเมินทั้งหมดจะถูกลบออก ไม่สามารถกู้คืนได้</p>
+            <div style={{display:"flex",gap:10}}>
+              <Btn full variant="outline" onClick={()=>setConfirmDel(false)}>ยกเลิก</Btn>
+              <Btn full variant="danger" onClick={deletePatient} disabled={deleting}>{deleting?"⏳ กำลังลบ...":"🗑️ ลบเลย"}</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{maxWidth:800,margin:"0 auto",padding:24}}>
         {loading ? <Loader/> : (
           <>
@@ -767,7 +917,8 @@ const PatientDetail = ({patient,doctor,onBack,onNewAssessment,onViewAssessment})
               <div style={{display:"flex",flexDirection:"column",gap:12}}>
                 {assessments.map((a,i)=>{
                   const interp=getInterp(a.totalScore); const pct=Math.round((a.totalScore/MAX_TOTAL)*100);
-                  return(<Card key={a.id} style={{cursor:"pointer",padding:16}} onClick={()=>onViewAssessment(a,assessments[i+1]||null)}
+                  return(<Card key={a.id} style={{cursor:"pointer",padding:16}}
+                    onClick={()=>onViewAssessment(a,assessments[i+1]||null)}
                     onMouseEnter={e=>e.currentTarget.style.boxShadow=C.shLg}
                     onMouseLeave={e=>e.currentTarget.style.boxShadow=C.sh}>
                     <div style={{display:"flex",alignItems:"center",gap:16}}>
@@ -1387,12 +1538,13 @@ export default function App(){
   const go=sc=>setScreen(sc);
   if(screen==="landing") return <Landing onLogin={()=>go("login")} onRegister={()=>go("register")} onAdmin={()=>go("adminLogin")}/>;
   if(screen==="register") return <Register onBack={()=>go("landing")} onSuccess={()=>go("login")}/>;
-  if(screen==="login") return <Login onBack={()=>go("landing")} onSuccess={d=>{setDoctor(d);go("dashboard");}}/>;
+  if(screen==="login") return <Login onBack={()=>go("landing")} onSuccess={d=>{setDoctor(d);go("dashboard");}} onForgot={()=>go("forgot")}/>;
+  if(screen==="forgot") return <ForgotPassword onBack={()=>go("login")}/>;
   if(screen==="adminLogin") return <AdminLogin onBack={()=>go("landing")} onSuccess={()=>go("admin")}/>;
   if(screen==="admin") return <AdminDash onBack={()=>go("landing")}/>;
   if(screen==="dashboard") return <Dashboard doctor={doctor} onLogout={()=>{setDoctor(null);go("landing");}} onNewPatient={()=>go("newPatient")} onSelectPatient={p=>{setPatient(p);go("patientDetail");}} onAdmin={()=>go("adminLogin")}/>;
   if(screen==="newPatient") return <NewPatient doctor={doctor} onBack={()=>go("dashboard")} onSuccess={p=>{setPatient(p);go("assessment");}}/>;
-  if(screen==="patientDetail") return <PatientDetail patient={patient} doctor={doctor} onBack={()=>go("dashboard")} onNewAssessment={()=>go("assessment")} onViewAssessment={(a,prev)=>{setAssessment(a);setPrevAssessment(prev);go("results");}}/>;
+  if(screen==="patientDetail") return <PatientDetail patient={patient} doctor={doctor} onBack={()=>go("dashboard")} onNewAssessment={()=>go("assessment")} onViewAssessment={(a,prev)=>{setAssessment(a);setPrevAssessment(prev);go("results");}} onDeleted={()=>go("dashboard")}/>;
   if(screen==="assessment") return <AssessmentForm patient={patient} doctor={doctor} onBack={()=>go("patientDetail")} onSave={async(rec)=>{const as=await api.getAssessments(patient.id);const sorted=(as.data||[]).filter(a=>a.id!==rec.id).sort((a,b)=>new Date(b.date)-new Date(a.date));setAssessment(rec);setPrevAssessment(sorted[0]||null);go("results");}}/>;
   if(screen==="results") return <Results assessment={assessment} prevAssessment={prevAssessment} patient={patient} doctor={doctor} onBack={()=>go("patientDetail")}/>;
   return null;
