@@ -4,7 +4,33 @@ import { useState, useEffect, useRef } from "react";
 // ⚙️ CONFIG — ใส่ URL จาก Google Apps Script Deploy ที่นี่
 // ============================================================
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx_ubttOiFzGAmKzbeoE4c_2BOOQGqEeulRJ7zHbPBKZa7uT1jC2VG1TqLoQmAD7ucREA/exec";
-// ตัวอย่าง: "https://script.google.com/macros/s/AKfycb.../exec"
+
+// ============================================================
+// ⚙️ INVITE CODE — แก้ code นี้เพื่อแจกให้แพทย์ที่ต้องการเชิญ
+// ============================================================
+const INVITE_CODE = "ETM-DOCTOR-2024";
+
+// ============================================================
+// 📋 PDPA TEXT
+// ============================================================
+const PDPA_TEXT = `นโยบายความเป็นส่วนตัว (PDPA)
+
+บริษัท ไอซาย (ประเทศไทย) จำกัด ("Eisai Thailand") ในฐานะผู้ให้บริการระบบ ADCS-MCI-ADL ขอแจ้งให้ท่านทราบถึงการเก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลของท่านตามพระราชบัญญัติคุ้มครองข้อมูลส่วนบุคคล พ.ศ. 2562 (PDPA)
+
+1. ข้อมูลที่เก็บรวบรวม
+ระบบนี้เก็บรวบรวมข้อมูลดังนี้: ชื่อ-นามสกุล เลขใบประกอบวิชาชีพเวชกรรม และข้อมูลผู้ป่วยที่บันทึกในระบบ
+
+2. วัตถุประสงค์การใช้ข้อมูล
+เพื่อสนับสนุนการประเมินความสามารถในการดำเนินกิจวัตรประจำวัน (ADL) สำหรับผู้ป่วย MCI และเพื่อการวิจัยทางการแพทย์ภายใต้ความยินยอมของท่าน
+
+3. การเปิดเผยข้อมูล
+ข้อมูลจะไม่ถูกเปิดเผยต่อบุคคลภายนอก เว้นแต่ได้รับความยินยอมจากท่านหรือตามที่กฎหมายกำหนด
+
+4. สิทธิของเจ้าของข้อมูล
+ท่านมีสิทธิในการเข้าถึง แก้ไข ลบ หรือขอรับข้อมูลส่วนบุคคลของท่านได้ โดยติดต่อ Eisai Thailand Marketing
+
+5. การรักษาความปลอดภัย
+ข้อมูลถูกจัดเก็บบน Google Cloud ภายใต้มาตรการรักษาความปลอดภัยมาตรฐานสากล`;
 
 // ============================================================
 // THEME
@@ -66,13 +92,16 @@ const Q = [
    desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ข้อใดอธิบายการทำได้ตามปกติได้ดีที่สุด เลือกคำอธิบายที่ตรงกับความสามารถสูงสุด:",
    opts:[{v:3,l:"ทำความสะอาดและตัดเล็บมือได้เองโดยไม่ต้องช่วย"},{v:2,l:"แปรงหรือหวีผมได้เองโดยไม่ต้องช่วย"},{v:1,l:"รักษาความสะอาดใบหน้าและมือได้เองโดยไม่ต้องช่วย"},{v:0,l:"ต้องมีคนช่วยในการดูแลผม ใบหน้า มือ และเล็บมือ"}]},
   {id:"q6a",num:"6A",title:"การแต่งตัว (A) เลือกเสื้อผ้า",en:"Dressing-Choice",hasYN:true,
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินเลือกเสื้อผ้าชุดแรกของวันเองหรือไม่? (เช่นชุดตอนเช้า หรือชุดที่ใส่ทั้งวัน)",
    ynLabel:"ผู้ถูกประเมินเลือกเสื้อผ้าชุดแรกของวันเองหรือไม่?",max:3,
    opts:[{v:3,l:"เลือกได้เอง โดยไม่ต้องกำกับหรือช่วย"},{v:2,l:"เลือกได้เมื่อมีการกำกับ"},{v:1,l:"เลือกได้เมื่อมีการช่วยทางกาย"}]},
   {id:"q6b",num:"6B",title:"การแต่งตัว (B) สวมใส่เสื้อผ้า",en:"Dressing-Ability",always:true,max:4,
+   desc:"เลือกคำอธิบายที่ตรงที่สุดในช่วง 4 สัปดาห์ที่ผ่านมา:",
    opts:[{v:4,l:"แต่งตัวได้ครบถ้วน โดยไม่ต้องกำกับหรือช่วยทางกาย"},{v:3,l:"แต่งตัวได้ครบถ้วนเมื่อมีการกำกับ แต่ไม่ต้องช่วยทางกาย"},{v:2,l:"ต้องช่วยทางกายเฉพาะกับกระดุม/ตะขอ/เชือกรองเท้า"},{v:1,l:"แต่งตัวได้เอง หากเสื้อผ้าไม่ต้องติดตะขอ/กระดุม"},{v:0,l:"ต้องช่วยทางกายเสมอ ไม่ว่าเสื้อผ้าประเภทใด"}]},
   {id:"q7",num:7,title:"การใช้โทรศัพท์",en:"Telephone",hasYN:true,
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินใช้โทรศัพท์หรือไม่?",
    ynLabel:"ผู้ถูกประเมินใช้โทรศัพท์หรือไม่?",max:5,
-   opts:[{v:5,l:"โทรออกได้หลังค้นหมายเลขจากสมุดโทรศัพท์/ไดเรกทอรี"},{v:4,l:"โทรออกได้เฉพาะหมายเลขที่คุ้นเคย โดยไม่ต้องเปิดดู"},{v:3,l:"โทรออกได้เฉพาะหมายเลขที่คุ้นเคย โดยใช้สมุดรายชื่อช่วย"},{v:2,l:"รับสายได้ แต่ไม่โทรออก"},{v:1,l:"ไม่รับสาย แต่พูดได้เมื่อมีคนต่อสายให้"},{v:0,l:"ไม่ใช้โทรศัพท์เลย (ตอบ 'ไม่ใช่')"}]},
+   opts:[{v:5,l:"โทรออกได้หลังค้นหมายเลขจากสมุดโทรศัพท์/ไดเรกทอรีในมือถือ"},{v:4,l:"โทรออกได้เฉพาะหมายเลขที่คุ้นเคย โดยไม่ต้องเปิดดู"},{v:3,l:"โทรออกได้เฉพาะหมายเลขที่คุ้นเคย โดยใช้สมุดรายชื่อ/รายการช่วย"},{v:2,l:"รับสายได้ แต่ไม่โทรออก"},{v:1,l:"ไม่รับสาย แต่พูดได้เมื่อมีคนต่อสายให้"},{v:0,l:"ไม่ใช้โทรศัพท์เลย (ตอบ 'ไม่ใช่')"}]},
   {id:"q8",num:8,title:"การดูโทรทัศน์",en:"Television",hasYN:true,
    ynLabel:"ผู้ถูกประเมินดูโทรทัศน์หรือไม่?",max:3,type:"subs",
    subs:[{id:"q8a",l:"โดยปกติ เลือก/ขอรายการที่ต่างกันหรือรายการโปรดหรือไม่?"},{id:"q8b",l:"โดยปกติ พูดถึงเนื้อหาระหว่างที่กำลังดูหรือไม่?"},{id:"q8c",l:"ภายใน 24 ชั่วโมงหลังดู ยังพูดถึงเนื้อหารายการนั้นหรือไม่?"}]},
@@ -83,9 +112,11 @@ const Q = [
    ynLabel:"ผู้ถูกประเมินเก็บจานจากโต๊ะหลังอาหาร/ของว่างหรือไม่?",max:3,
    opts:[{v:3,l:"ได้เอง"},{v:2,l:"ต้องกำกับ"},{v:1,l:"ต้องช่วยทางกาย"}]},
   {id:"q11",num:11,title:"หา/จัดการของใช้ส่วนตัวในบ้าน",en:"Find Belongings",hasYN:true,
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินสามารถจัดการของส่วนตัวในบ้านได้หรือไม่?",
    ynLabel:"ผู้ถูกประเมินสามารถหา/จัดการของใช้ส่วนตัวในบ้านได้หรือไม่?",max:3,
-   opts:[{v:3,l:"ได้เอง"},{v:2,l:"ต้องกำกับ"},{v:1,l:"ต้องช่วยทางกาย"}]},
+   opts:[{v:3,l:"ทำได้เองโดยไม่ต้องมีคนกำกับ"},{v:2,l:"ทำได้แต่ต้องกำกับ"},{v:1,l:"ต้องช่วยทางกาย"}]},
   {id:"q12",num:12,title:"เตรียมเครื่องดื่มร้อนหรือเย็น",en:"Beverage",hasYN:true,
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินสามารถเตรียมเครื่องดื่มร้อนหรือเย็นเองได้หรือไม่? (เครื่องดื่มเย็นรวมถึงน้ำเปล่า)",
    ynLabel:"ผู้ถูกประเมินสามารถเตรียมเครื่องดื่มได้หรือไม่? (รวมน้ำเปล่า)",max:3,
    opts:[{v:3,l:"ชงเครื่องดื่มร้อนได้เอง โดยมากไม่ต้องช่วยทางกาย"},{v:2,l:"ชงเครื่องดื่มร้อนได้ หากมีผู้อื่นช่วยต้มน้ำ"},{v:1,l:"เตรียมเครื่องดื่มเย็นได้เอง โดยมากไม่ต้องช่วยทางกาย"}]},
   {id:"q13",num:13,title:"ทำอาหาร/ของว่างเองที่บ้าน",en:"Make Meal",hasYN:true,
@@ -103,15 +134,17 @@ const Q = [
   {id:"q16a",num:"16A",title:"การซื้อของ (A) เลือกสินค้า",en:"Shopping-Selection",hasYN:true,
    ynLabel:"ผู้ถูกประเมินไปซื้อของหรือไม่?",max:3,
    opts:[{v:3,l:"เลือกสินค้าเองได้"},{v:2,l:"ต้องช่วย/กำกับบ้าง"},{v:1,l:"ไม่เลือก/เลือกแบบสุ่มหรือไม่เหมาะ"}]},
-  {id:"q16b",num:"16B",title:"การซื้อของ (B) ชำระเงิน",en:"Shopping-Payment",always:true,max:1,type:"binary",
-   label:"โดยปกติสามารถชำระเงินค่าสินค้าได้โดยไม่ต้องช่วยหรือไม่?",
-   opts:[{v:1,l:"ได้"},{v:0,l:"ไม่ได้"}]},
+  {id:"q16b",num:"16B",title:"การซื้อของ (B) ชำระเงิน",en:"Shopping-Payment",always:true,max:3,type:"binary",
+   label:"โดยปกติสามารถ \"ชำระเงินค่าสินค้า\" ได้โดยไม่ต้องช่วยหรือไม่?",
+   opts:[{v:3,l:"ได้"},{v:0,l:"ไม่ได้"},{v:0,l:"ไม่ทราบ"}]},
   {id:"q17",num:17,title:"การนัดหมาย/การจำล่วงหน้า",en:"Appointments",hasYN:true,
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินสามารถจำวันนัดหมาย การนัดกับผู้อื่น เช่น นัดตรวจกับแพทย์ นัดตัดผม หรือนัดอื่น ๆ ได้หรือไม่?",
    ynLabel:"ผู้ถูกประเมินมีการนัดหมายหรือไม่?",max:3,
    opts:[{v:3,l:"โดยมากจำได้เอง อาจต้องใช้บันทึก/สมุดนัด/ปฏิทินช่วย"},{v:2,l:"จำได้เมื่อมีการเตือนด้วยวาจาในวันนัด"},{v:1,l:"โดยมากจำไม่ได้ แม้มีการเตือนด้วยวาจาในวันนัด"}]},
   {id:"q18",num:18,title:"ถูกปล่อยให้อยู่ตามลำพัง",en:"Left Alone",hasYN:true,
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินถูกปล่อยให้อยู่ตามลำพังหรือไม่?",
    ynLabel:"ผู้ถูกประเมินเคยถูกปล่อยให้อยู่ตามลำพังหรือไม่?",max:3,type:"subs",
-   subs:[{id:"q18a",l:"นอกบ้าน ≥ 15 นาที ในเวลากลางวัน"},{id:"q18b",l:"อยู่ที่บ้าน ≥ 1 ชั่วโมง ในเวลากลางวัน"},{id:"q18c",l:"อยู่ที่บ้าน < 1 ชั่วโมง ในเวลากลางวัน"}]},
+   subs:[{id:"q18a",l:"a) อยู่ตามลำพังนอกบ้าน 15 นาที หรือมากกว่า ในเวลากลางวัน"},{id:"q18b",l:"b) อยู่ตามลำพังที่บ้าน 1 ชั่วโมง หรือมากกว่า ในเวลากลางวัน"},{id:"q18c",l:"c) อยู่ตามลำพังที่บ้าน น้อยกว่า 1 ชั่วโมง ในเวลากลางวัน"}]},
   {id:"q19",num:19,title:"พูดถึงเหตุการณ์ปัจจุบัน",en:"Talk About Events",hasYN:true,
    ynLabel:"ผู้ถูกประเมินพูดถึงเหตุการณ์ปัจจุบันหรือไม่?",max:3,type:"subs",
    subs:[{id:"q19a",l:"เรื่องที่ได้ยิน/อ่าน/เห็นจากทีวี แต่ไม่ได้มีส่วนร่วม"},{id:"q19b",l:"เรื่องที่ตนมีส่วนร่วมภายนอกบ้าน (ครอบครัว/เพื่อน/เพื่อนบ้าน)"},{id:"q19c",l:"เรื่องที่เกิดขึ้นในบ้าน และตนมีส่วนร่วม/เฝ้าดู"}]},
@@ -122,9 +155,10 @@ const Q = [
    ynLabel:"ผู้ถูกประเมินเขียนสิ่งต่างๆ หรือไม่? (รวมกรณีที่เขียนได้หลังการกระตุ้น)",max:3,
    opts:[{v:3,l:"จดหมายหรือบันทึกยาว ที่ผู้อื่นอ่านเข้าใจ"},{v:2,l:"โน้ตหรือข้อความสั้น ที่ผู้อื่นอ่านเข้าใจ"},{v:1,l:"ลายเซ็นหรือชื่อของตนเอง"}]},
   {id:"q22",num:22,title:"งานอดิเรก/กิจกรรมยามว่าง/เกม",en:"Hobbies",hasYN:true,
+   desc:"ในช่วง 4 สัปดาห์ที่ผ่านมา ผู้ถูกประเมินมีการทำงานอดิเรก กิจกรรมยามว่าง หรือเกมหรือไม่?",
    ynLabel:"ผู้ถูกประเมินมีงานอดิเรก/กิจกรรมยามว่าง/เกมหรือไม่?",max:3,
-   note:"หมายเหตุ: ไพ่/กระดาน, บิงโก, ปริศนาอักษรไขว้, เครื่องดนตรี, ถักไหมพรม, เย็บผ้า, อ่านหนังสือ, ทำสวน, กอล์ฟ, เทนนิส, งานฝีมือ/ช่างซ่อม, ตกปลา — 'การเดิน' อย่างเดียว ไม่นับ", // ✅ แก้ เวิร์กช็อป → งานฝีมือ/ช่างซ่อม
-   opts:[{v:3,l:"ได้เอง"},{v:2,l:"ต้องกำกับ"},{v:1,l:"ต้องช่วย"}]},
+   note:"หมายเหตุ: ไพ่/กระดาน (บริดจ์ หมากรุก หมากฮอส), บิงโก, ปริศนาอักษรไขว้, เครื่องดนตรี, ถักไหมพรม, เย็บผ้า, อ่านหนังสือ, ทำสวน, กอล์ฟ, เทนนิส, งานฝีมือ/ช่างซ่อม, ตกปลา — 'การเดิน' อย่างเดียว ไม่นับเป็นงานอดิเรก",
+   opts:[{v:3,l:"ทำได้เอง โดยไม่ต้องมีคนช่วย"},{v:2,l:"ทำได้แต่ต้องมีผู้กำกับการทำ"},{v:1,l:"ต้องช่วยเหลือ"}]},
   {id:"q23",num:23,title:"ใช้เครื่องใช้ไฟฟ้าในบ้านเพื่อทำงานบ้าน",en:"Household Appliances",hasYN:true,
    ynLabel:"ผู้ถูกประเมินใช้เครื่องใช้ไฟฟ้าในบ้านหรือไม่?",max:4,
    opts:[{v:4,l:"ใช้ได้เอง รวมถึงควบคุมปุ่มมากกว่าเปิด-ปิด หากจำเป็น"},{v:3,l:"ใช้ได้เอง แต่ควบคุมเฉพาะปุ่มเปิด-ปิด"},{v:2,l:"ใช้ได้เมื่อมีการกำกับ แต่ไม่ต้องช่วยทางกาย"},{v:1,l:"ใช้ได้เมื่อมีการช่วยทางกาย"}]},
@@ -380,10 +414,20 @@ const Landing = ({onLogin,onRegister,onAdmin})=>(
 // SCREEN: Register
 // ============================================================
 const Register = ({onBack,onSuccess})=>{
+  const [step,setStep]=useState(0); // 0=PDPA, 1=InviteCode, 2=Form
+  const [pdpaAccepted,setPdpaAccepted]=useState(false);
+  const [inviteInput,setInviteInput]=useState("");
+  const [inviteErr,setInviteErr]=useState("");
   const [f,setF]=useState({firstName:"",lastName:"",license:"",pass:"",pass2:""});
   const [err,setErr]=useState(""); const [loading,setLoading]=useState(false);
   const [done,setDone]=useState(false);
   const update=k=>v=>setF({...f,[k]:v});
+
+  const checkInvite=()=>{
+    if(inviteInput.trim()===INVITE_CODE){setStep(2);setInviteErr("");}
+    else setInviteErr("Invite Code ไม่ถูกต้อง กรุณาตรวจสอบใหม่");
+  };
+
   const submit=async()=>{
     if(!f.firstName||!f.lastName||!f.license||!f.pass) return setErr("กรุณากรอกข้อมูลให้ครบ");
     if(f.pass!==f.pass2) return setErr("รหัสผ่านไม่ตรงกัน");
@@ -401,6 +445,7 @@ const Register = ({onBack,onSuccess})=>{
     } catch(e){ setErr("เชื่อมต่อ server ไม่ได้ — ตรวจสอบ GAS_URL"); }
     setLoading(false);
   };
+
   if(done) return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <Card style={{width:"100%",maxWidth:460,textAlign:"center"}}>
@@ -412,10 +457,43 @@ const Register = ({onBack,onSuccess})=>{
       </Card>
     </div>
   );
+
+  // Step 0: PDPA Consent
+  if(step===0) return(
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <Card style={{width:"100%",maxWidth:560}}>
+        <div style={{textAlign:"center",marginBottom:20}}><div style={{fontSize:36}}>📋</div><h2 style={{margin:"8px 0 0",color:C.text}}>นโยบายความเป็นส่วนตัว</h2><div style={{fontSize:12,color:C.textLight,marginTop:4}}>กรุณาอ่านและยอมรับก่อนลงทะเบียน</div></div>
+        <div style={{background:"#F8FEFF",border:`1.5px solid ${C.border}`,borderRadius:10,padding:"14px 16px",maxHeight:300,overflowY:"auto",fontSize:13,color:C.textMid,lineHeight:1.7,marginBottom:16,whiteSpace:"pre-wrap"}}>{PDPA_TEXT}</div>
+        <div onClick={()=>setPdpaAccepted(!pdpaAccepted)} style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer",marginBottom:20,padding:"10px 14px",borderRadius:10,background:pdpaAccepted?"#ECFDF5":"#F8FEFF",border:`1.5px solid ${pdpaAccepted?"#059669":C.border}`}}>
+          <div style={{width:22,height:22,borderRadius:6,border:`2px solid ${pdpaAccepted?"#059669":C.border}`,background:pdpaAccepted?"#059669":"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {pdpaAccepted&&<span style={{color:"#fff",fontSize:14}}>✓</span>}
+          </div>
+          <span style={{fontSize:13,color:C.text}}>ข้าพเจ้าได้อ่านและยอมรับนโยบายความเป็นส่วนตัว (PDPA) แล้ว</span>
+        </div>
+        <Btn full onClick={()=>setStep(1)} disabled={!pdpaAccepted}>ยอมรับและดำเนินการต่อ →</Btn>
+        <Btn full variant="ghost" onClick={onBack} style={{marginTop:8}}>← กลับ</Btn>
+      </Card>
+    </div>
+  );
+
+  // Step 1: Invite Code
+  if(step===1) return(
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <Card style={{width:"100%",maxWidth:460}}>
+        <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:36}}>🔑</div><h2 style={{margin:"8px 0 4px",color:C.text}}>Invite Code</h2><div style={{fontSize:13,color:C.textLight}}>กรุณากรอก Invite Code ที่ได้รับจาก Eisai Thailand</div></div>
+        <Input label="Invite Code" value={inviteInput} onChange={setInviteInput} placeholder="เช่น ETM-DOCTOR-2024" required/>
+        {inviteErr&&<div style={{color:C.coral,fontSize:13,marginBottom:12,padding:"8px 12px",background:"#FEF2F2",borderRadius:8}}>{inviteErr}</div>}
+        <Btn full onClick={checkInvite}>ยืนยัน Code →</Btn>
+        <Btn full variant="ghost" onClick={()=>setStep(0)} style={{marginTop:8}}>← กลับ</Btn>
+      </Card>
+    </div>
+  );
+
+  // Step 2: Registration Form
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <Card style={{width:"100%",maxWidth:460}}>
-        <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:36}}>📋</div><h2 style={{margin:"8px 0 0",color:C.text}}>ลงทะเบียนแพทย์</h2></div>
+        <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:36}}>📝</div><h2 style={{margin:"8px 0 0",color:C.text}}>ลงทะเบียนแพทย์</h2></div>
         <Input label="ชื่อ" value={f.firstName} onChange={update("firstName")} required/>
         <Input label="นามสกุล" value={f.lastName} onChange={update("lastName")} required/>
         <Input label="เลข ว. (ใบประกอบวิชาชีพเวชกรรม)" value={f.license} onChange={update("license")} required hint="เช่น 12345"/>
@@ -423,7 +501,7 @@ const Register = ({onBack,onSuccess})=>{
         <Input label="ยืนยันรหัสผ่าน" value={f.pass2} onChange={update("pass2")} type="password" required/>
         <ErrBox msg={err}/>
         <Btn full onClick={submit} disabled={loading}>{loading?"⏳ กำลังบันทึก...":"ลงทะเบียน"}</Btn>
-        <Btn full variant="ghost" onClick={onBack} style={{marginTop:8}}>← กลับ</Btn>
+        <Btn full variant="ghost" onClick={()=>setStep(1)} style={{marginTop:8}}>← กลับ</Btn>
       </Card>
     </div>
   );
@@ -439,7 +517,7 @@ const Login = ({onBack,onSuccess})=>{
     setLoading(true); setErr("");
     try {
       const {data:docs=[]} = await api.getDoctors();
-      const doc=docs.find(d=>d.license===license&&d.pass===pass);
+      const doc=docs.find(d=>String(d.license).trim()===String(license).trim()&&String(d.pass).trim()===String(pass).trim());
       if(!doc) { setErr("เลข ว. หรือรหัสผ่านไม่ถูกต้อง"); setLoading(false); return; }
       onSuccess(doc);
     } catch(e){ setErr("เชื่อมต่อ server ไม่ได้ — ตรวจสอบ GAS_URL"); }
@@ -504,8 +582,8 @@ const Dashboard = ({doctor,onLogout,onNewPatient,onSelectPatient,onAdmin})=>{
             <div style={{fontSize:12,opacity:0.75}}>เลข ว. {doctor.license}</div>
           </div>
           <div style={{display:"flex",gap:8}}>
-            <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.5)"}} onClick={onAdmin}>⚙️ Admin</Btn>
-            <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.5)"}} onClick={onLogout}>ออกจากระบบ</Btn>
+            <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.7)",background:"rgba(255,255,255,0.15)"}} onClick={onAdmin}>⚙️ Admin</Btn>
+            <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.7)",background:"rgba(255,255,255,0.15)"}} onClick={onLogout}>ออกจากระบบ</Btn>
           </div>
         </div>
       </div>
@@ -818,7 +896,7 @@ const Results = ({assessment,prevAssessment,patient,doctor,onBack})=>{
         <div style={{maxWidth:900,margin:"0 auto",display:"flex",alignItems:"center",gap:12}}>
           <button onClick={onBack} style={{background:"rgba(255,255,255,0.2)",border:"none",color:"#fff",borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:13}}>← กลับ</button>
           <div style={{flex:1,fontWeight:700}}>ผลการประเมิน ADCS-MCI-ADL</div>
-          <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.5)"}}
+          <Btn sm variant="outline" style={{color:"#fff",border:"1.5px solid rgba(255,255,255,0.7)",background:"rgba(255,255,255,0.15)"}}
             onClick={()=>exportPDF(assessment,patient,doctor,prevAssessment)}>
             📄 Export PDF
           </Btn>
@@ -1110,7 +1188,7 @@ export default function App(){
   },[]);
   const go=sc=>setScreen(sc);
   if(screen==="landing") return <Landing onLogin={()=>go("login")} onRegister={()=>go("register")} onAdmin={()=>go("adminLogin")}/>;
-  if(screen==="register") return <Register onBack={()=>go("landing")} onSuccess={d=>{setDoctor(d);go("dashboard");}}/>;
+  if(screen==="register") return <Register onBack={()=>go("landing")} onSuccess={()=>go("login")}/>;
   if(screen==="login") return <Login onBack={()=>go("landing")} onSuccess={d=>{setDoctor(d);go("dashboard");}}/>;
   if(screen==="adminLogin") return <AdminLogin onBack={()=>go("landing")} onSuccess={()=>go("admin")}/>;
   if(screen==="admin") return <AdminDash onBack={()=>go("landing")}/>;
@@ -1121,4 +1199,3 @@ export default function App(){
   if(screen==="results") return <Results assessment={assessment} prevAssessment={prevAssessment} patient={patient} doctor={doctor} onBack={()=>go("patientDetail")}/>;
   return null;
 }
-
